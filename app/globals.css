@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: #0E1721;
+  --color-ink-soft: #16222F;
+  --color-cream: #F7F4EC;
+  --color-paper: #FFFFFF;
+  --color-amber: #F2A63B;
+  --color-amber-dim: #C98526;
+  --color-amber-light: #FCD9A0;
+  --color-teal: #146B5C;
+  --color-teal-deep: #0E4E43;
+  --color-teal-light: #5FA396;
+  --color-slate: #4B5563;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f7f4ec;
+  color: #0e1721;
+}
+
+::selection {
+  background-color: #f2a63b;
+  color: #0e1721;
+}
+
+.container-shx {
+  width: 100%;
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.diagonal-bottom {
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
+}
+
+.diagonal-top {
+  clip-path: polygon(0 12%, 100% 0, 100% 100%, 0 100%);
+}
+
+.focus-ring:focus-visible {
+  outline: 3px solid #146b5c;
+  outline-offset: 2px;
+}
+
+.shx-input {
+  width: 100%;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(14, 23, 33, 0.15);
+  background-color: #ffffff;
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: #0e1721;
+}
+
+.shx-input:focus-visible {
+  outline: 3px solid #146b5c;
+  outline-offset: 1px;
+  border-color: #146b5c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
