@@ -4,6 +4,10 @@ import Logo from "./Logo";
 const links = [
   { href: "/", label: "Home" },
   { href: "/services", label: "Services" },
+  { href: "/about", label: "About" },
+  { href: "/blog", label: "Blog" },
+  { href: "/reviews", label: "Reviews" },
+  { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -27,14 +31,8 @@ export default function Navbar() {
         </nav>
         <div className="flex items-center gap-3">
           <Link
-            href="/admin/login"
-            className="focus-ring hidden rounded-sm font-body text-sm text-ink/60 hover:text-ink sm:block"
-          >
-            Admin
-          </Link>
-          <Link
             href="/booking"
-            className="focus-ring rounded-full bg-ink px-5 py-2.5 font-body text-sm font-medium text-cream transition-colors hover:bg-teal-deep"
+            className="focus-ring rounded-full bg-amber px-5 py-2.5 font-body text-sm font-medium text-cream transition-colors hover:bg-teal-deep"
           >
             Book now
           </Link>
