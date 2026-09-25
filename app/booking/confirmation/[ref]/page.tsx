@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import StatusBadge from "@/components/StatusBadge";
-import { readDB } from "@/lib/db";
+import { getBookingByRef } from "@/lib/supabase";
+import BookingManagePanel from "../BookingManagePanel";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Booking confirmed | Shinex Car Wash",
@@ -11,12 +14,14 @@ export const metadata = {
 
 export default async function ConfirmationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ ref: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { ref } = await params;
-  const db = readDB();
-  const booking = db.bookings.find((b) => b.ref === ref);
+  const { token } = await searchParams;
+  const booking = await getBookingByRef(ref);
 
   if (!booking) {
     notFound();
@@ -57,14 +62,30 @@ export default async function ConfirmationPage({
               <Detail label="Phone number" value={booking.phone} />
               <Detail label="Vehicle type" value={booking.vehicleType} />
               <Detail label="Registration number" value={booking.regNumber} />
-              <Detail label="Service" value={booking.serviceName} />
+              <div className="sm:col-span-2">
+                <dt className="font-body text-xs uppercase tracking-wide text-slate">
+                  Services
+                </dt>
+                <dd className="mt-1 space-y-1">
+                  {booking.serviceNames.map((name, i) => (
+                    <span
+                      key={i}
+                      className="mr-2 inline-block rounded-full bg-cream px-3 py-1 font-body text-sm font-medium text-ink"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </dd>
+              </div>
               <Detail
-                label="Price"
+                label="Total price"
                 value={`KES ${booking.price.toLocaleString()}`}
               />
               <Detail label="Date" value={booking.date} />
               <Detail label="Time" value={booking.time} />
             </dl>
+
+            <BookingManagePanel booking={booking} token={token} />
 
             <div className="mt-9 flex flex-wrap gap-3 border-t border-black/10 pt-6">
               <Link

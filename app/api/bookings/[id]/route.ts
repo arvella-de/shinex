@@ -1,45 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readDB, writeDB } from "@/lib/db";
-import { isAdminAuthenticated } from "@/lib/auth";
+import { getServerSupabase } from "@/lib/auth";
+import { mapBooking } from "@/lib/supabase";
+import { todayIso } from "@/lib/dates";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const db = readDB();
-  const booking = db.bookings.find(
-    (b) => b.id === id || b.ref === id
-  );
-  if (!booking) {
-    return NextResponse.json({ error: "Booking not found" }, { status: 404 });
-  }
-  return NextResponse.json(booking);
-}
+const allowed = ["pending", "confirmed", "completed", "cancelled"];
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!(await isAdminAuthenticated())) {
+  const supabase = await getServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Not authorized" }, { status: 401 });
   }
+
   const { id } = await params;
   const { status } = await req.json();
-  const allowed = ["pending", "confirmed", "completed", "cancelled"];
   if (!allowed.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const db = readDB();
-  const idx = db.bookings.findIndex(
-    (b) => b.id === id || b.ref === id
-  );
-  if (idx === -1) {
+  if (status === "completed") {
+    const { data: existing } = await supabase
+      .from("bookings")
+      .select("date")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (!existing) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+
+    if (existing.date > todayIso()) {
+      return NextResponse.json(
+        { error: "A booking can only be marked completed on or after its appointment date." },
+        { status: 400 }
+      );
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({ status })
+    .eq("id", id)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
     return NextResponse.json({ error: "Booking not found" }, { status: 404 });
   }
-  db.bookings[idx].status = status;
-  writeDB(db);
 
-  return NextResponse.json(db.bookings[idx]);
+  return NextResponse.json(mapBooking(data));
 }

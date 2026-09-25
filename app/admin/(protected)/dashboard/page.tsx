@@ -1,17 +1,19 @@
 import Link from "next/link";
-import { readDB } from "@/lib/db";
+import { getBookings, getNotifications } from "@/lib/supabase";
+import { todayIso } from "@/lib/dates";
 import StatusBadge from "@/components/StatusBadge";
 import BookingActions from "../BookingActions";
+import ActivityFeed from "./ActivityFeed";
 
 export const metadata = { title: "Admin dashboard | Shinex" };
 
 export default async function AdminDashboardPage() {
-  const db = readDB();
-  const bookings = [...db.bookings].sort((a, b) =>
+  const bookings = (await getBookings()).sort((a, b) =>
     `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`)
   );
+  const notifications = await getNotifications(10);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const stats = {
     total: bookings.length,
     pending: bookings.filter((b) => b.status === "pending").length,
@@ -64,7 +66,7 @@ export default async function AdminDashboardPage() {
                     <p className="font-display text-base font-semibold text-ink">
                       {b.customerName}{" "}
                       <span className="font-body text-sm font-normal text-slate">
-                        · {b.serviceName}
+                        · {b.serviceNames.join(", ")}
                       </span>
                     </p>
                     <p className="mt-0.5 font-body text-sm text-slate">
@@ -73,13 +75,17 @@ export default async function AdminDashboardPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <StatusBadge status={b.status} />
-                    <BookingActions bookingId={b.id} status={b.status} />
+                    <BookingActions bookingId={b.id} status={b.status} bookingDate={b.date} />
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mt-10">
+        <ActivityFeed notifications={notifications} />
       </div>
     </div>
   );

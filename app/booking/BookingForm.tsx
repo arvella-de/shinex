@@ -3,44 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ServiceRecord, VehicleType } from "@/lib/types";
-
-const vehicleTypes: VehicleType[] = [
-  "Hatchback",
-  "Sedan",
-  "SUV",
-  "Pick-up",
-  "Van / Minibus",
-  "Luxury / Executive",
-];
-
-const timeSlots = [
-  "08:00",
-  "08:30",
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "13:00",
-  "13:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-];
-
-function todayISO() {
-  const d = new Date();
-  const offset = d.getTimezoneOffset();
-  const local = new Date(d.getTime() - offset * 60 * 1000);
-  return local.toISOString().slice(0, 10);
-}
+import { TIME_SLOTS, VEHICLE_TYPES } from "@/lib/booking-options";
+import { todayISOLocal } from "@/lib/dates";
 
 export default function BookingForm({
   services,
@@ -52,10 +16,10 @@ export default function BookingForm({
   const router = useRouter();
   const [vehicleType, setVehicleType] = useState<VehicleType | "">("");
   const [regNumber, setRegNumber] = useState("");
-  const [serviceId, setServiceId] = useState(
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
     preselectedServiceId && services.some((s) => s.id === preselectedServiceId)
-      ? preselectedServiceId
-      : ""
+      ? [preselectedServiceId]
+      : []
   );
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -64,7 +28,18 @@ export default function BookingForm({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const selectedService = services.find((s) => s.id === serviceId);
+  const selectedServices = services.filter((s) =>
+    selectedServiceIds.includes(s.id)
+  );
+  const totalPrice = selectedServices.reduce((sum, s) => sum + s.price, 0);
+
+  function toggleService(serviceId: string) {
+    setSelectedServiceIds((prev) =>
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,7 +48,7 @@ export default function BookingForm({
     if (
       !vehicleType ||
       !regNumber.trim() ||
-      !serviceId ||
+      selectedServiceIds.length === 0 ||
       !date ||
       !time ||
       !customerName.trim() ||
@@ -91,7 +66,7 @@ export default function BookingForm({
         body: JSON.stringify({
           vehicleType,
           regNumber,
-          serviceId,
+          serviceIds: selectedServiceIds,
           date,
           time,
           customerName,
@@ -104,7 +79,7 @@ export default function BookingForm({
         setSubmitting(false);
         return;
       }
-      router.push(`/booking/confirmation/${data.ref}`);
+      router.push(`/booking/confirmation/${data.ref}?token=${data.manageToken}`);
     } catch {
       setError("Could not reach the server. Please try again.");
       setSubmitting(false);
@@ -126,7 +101,7 @@ export default function BookingForm({
                 className="shx-input"
               >
                 <option value="">Select a vehicle type</option>
-                {vehicleTypes.map((v) => (
+                {VEHICLE_TYPES.map((v) => (
                   <option key={v} value={v}>
                     {v}
                   </option>
@@ -145,44 +120,48 @@ export default function BookingForm({
           </div>
         </FormSection>
 
-        <FormSection number="02" title="Choose a service">
+        <FormSection number="02" title="Choose services">
+          <p className="mb-3 font-body text-xs text-slate">
+            Select one or more services
+          </p>
           <div className="grid gap-3">
-            {services.map((s) => (
-              <label
-                key={s.id}
-                className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border px-5 py-4 transition-colors ${
-                  serviceId === s.id
-                    ? "border-ink bg-ink text-cream"
-                    : "border-black/10 bg-paper hover:border-ink/30"
-                }`}
-              >
-                <span className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="service"
-                    value={s.id}
-                    checked={serviceId === s.id}
-                    onChange={() => setServiceId(s.id)}
-                    className="h-4 w-4 accent-amber"
-                  />
-                  <span>
-                    <span className="block font-display text-base font-semibold">
-                      {s.name}
-                    </span>
-                    <span
-                      className={`block font-body text-xs ${
-                        serviceId === s.id ? "text-cream/60" : "text-slate"
-                      }`}
-                    >
-                      ~{s.durationMinutes} min
+            {services.map((s) => {
+              const isSelected = selectedServiceIds.includes(s.id);
+              return (
+                <label
+                  key={s.id}
+                  className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border px-5 py-4 transition-colors ${
+                    isSelected
+                      ? "border-ink bg-ink text-cream"
+                      : "border-black/10 bg-paper hover:border-ink/30"
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleService(s.id)}
+                      className="h-4 w-4 accent-amber"
+                    />
+                    <span>
+                      <span className="block font-display text-base font-semibold">
+                        {s.name}
+                      </span>
+                      <span
+                        className={`block font-body text-xs ${
+                          isSelected ? "text-cream/60" : "text-slate"
+                        }`}
+                      >
+                        ~{s.durationMinutes} min
+                      </span>
                     </span>
                   </span>
-                </span>
-                <span className="font-display text-lg font-semibold">
-                  KES {s.price.toLocaleString()}
-                </span>
-              </label>
-            ))}
+                  <span className="font-display text-lg font-semibold">
+                    KES {s.price.toLocaleString()}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </FormSection>
 
@@ -191,7 +170,7 @@ export default function BookingForm({
             <Field label="Date">
               <input
                 type="date"
-                min={todayISO()}
+                min={todayISOLocal()}
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 className="shx-input"
@@ -204,7 +183,7 @@ export default function BookingForm({
                 className="shx-input"
               >
                 <option value="">Select a time</option>
-                {timeSlots.map((t) => (
+                {TIME_SLOTS.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
@@ -255,19 +234,33 @@ export default function BookingForm({
         <dl className="mt-5 space-y-3 font-body text-sm">
           <SummaryRow label="Vehicle" value={vehicleType || "—"} />
           <SummaryRow label="Reg. number" value={regNumber || "—"} />
-          <SummaryRow
-            label="Service"
-            value={selectedService ? selectedService.name : "—"}
-          />
+          <div>
+            <dt className="text-slate">Services</dt>
+            <dd className="mt-1 space-y-1">
+              {selectedServices.length > 0 ? (
+                selectedServices.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="font-medium text-ink">{s.name}</span>
+                    <span className="text-ink">
+                      KES {s.price.toLocaleString()}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <span className="text-ink">—</span>
+              )}
+            </dd>
+          </div>
           <SummaryRow label="Date" value={date || "—"} />
           <SummaryRow label="Time" value={time || "—"} />
         </dl>
         <div className="mt-5 flex items-baseline justify-between border-t border-black/10 pt-4">
           <span className="font-body text-sm text-slate">Total</span>
           <span className="font-display text-2xl font-semibold text-ink">
-            {selectedService
-              ? `KES ${selectedService.price.toLocaleString()}`
-              : "—"}
+            KES {totalPrice.toLocaleString()}
           </span>
         </div>
         <button

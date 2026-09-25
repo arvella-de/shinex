@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import { getBrowserSupabase } from "@/lib/browser-supabase";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -17,20 +18,20 @@ export default function AdminLoginPage() {
     setError(null);
     setSubmitting(true);
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+    const supabase = getBrowserSupabase();
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
-    if (res.ok) {
-      router.push("/admin/dashboard");
-      router.refresh();
-    } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error || "Login failed. Please try again.");
+    if (error) {
+      setError(error.message || "Login failed. Please try again.");
       setSubmitting(false);
+      return;
     }
+
+    router.push("/admin/dashboard");
+    router.refresh();
   }
 
   return (
@@ -43,20 +44,20 @@ export default function AdminLoginPage() {
           Admin sign in
         </h1>
         <p className="mt-1 font-body text-sm text-slate">
-          Manage bookings and services.
+          Manage bookings for Shinex Car Wash.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label className="mb-1.5 block font-body text-sm font-medium text-ink/80">
-              Username
+              Email
             </label>
             <input
               required
-              type="text"
-              autoComplete="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="shx-input"
             />
           </div>
@@ -89,9 +90,9 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        <p className="mt-5 font-body text-xs text-slate">
-          Demo credentials: <span className="font-medium">admin</span> /{" "}
-          <span className="font-medium">shinex2026</span>
+        <p className="mt-5 font-body text-xs leading-relaxed text-slate">
+          Sign in with the email and password set up in the Supabase dashboard
+          (Authentication &rarr; Users).
         </p>
       </div>
     </main>

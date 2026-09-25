@@ -89,12 +89,12 @@ export default function BookingsTable({
                         </span>
                       </p>
                       <p className="mt-0.5 font-body text-sm text-slate">
-                        {b.serviceName} · {b.date} at {b.time}
+                        {b.serviceNames.join(", ")} · {b.date} at {b.time}
                       </p>
                     </button>
                     <div className="flex items-center gap-3">
                       <StatusBadge status={b.status} />
-                      <BookingActions bookingId={b.id} status={b.status} />
+                      <BookingActions bookingId={b.id} status={b.status} bookingDate={b.date} />
                     </div>
                   </div>
 

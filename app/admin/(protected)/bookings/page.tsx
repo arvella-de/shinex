@@ -1,11 +1,10 @@
-import { readDB } from "@/lib/db";
-import BookingsTable from "./BookingsTable";
+import { getBookings } from "@/lib/supabase";
+import BookingsView from "./BookingsView";
 
 export const metadata = { title: "Manage bookings | Shinex Admin" };
 
 export default async function ManageBookingsPage() {
-  const db = readDB();
-  const bookings = [...db.bookings].sort((a, b) =>
+  const bookings = (await getBookings()).sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt)
   );
 
@@ -18,7 +17,7 @@ export default async function ManageBookingsPage() {
         Search, filter, and update the status of every booking.
       </p>
       <div className="mt-8">
-        <BookingsTable bookings={bookings} />
+        <BookingsView bookings={bookings} />
       </div>
     </div>
   );
